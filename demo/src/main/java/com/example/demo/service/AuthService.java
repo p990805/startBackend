@@ -1,9 +1,9 @@
-package com.example.service;
+package com.example.demo.service;
 
-import com.example.dto.AuthDto;
-import com.example.entity.User;
-import com.example.jwt.JwtUtil;
-import com.example.repository.UserRepository;
+import com.example.demo.dto.AuthDto;
+import com.example.demo.entity.User;
+import com.example.demo.jwt.JwtUtil;
+import com.example.demo.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
