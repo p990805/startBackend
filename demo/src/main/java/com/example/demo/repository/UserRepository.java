@@ -1,6 +1,6 @@
-package com.example.repository;
+package com.example.demo.repository;
 
-import com.example.entity.User;
+import com.example.demo.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,8 +10,6 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-
-    // 기본 CRUD는 JpaRepository에서 제공
 
     // 사용자명으로 조회
     Optional<User> findByUsername(String username);

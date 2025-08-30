@@ -1,4 +1,4 @@
-package com.example.entity;
+package com.example.demo.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -7,12 +7,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "users",
         uniqueConstraints = {
-            @UniqueConstraint(columnNames = "username"),
-            @UniqueConstraint(columnNames = "email"),
-            @UniqueConstraint(columnNames = "nickname")
+                @UniqueConstraint(columnNames = "username"),
+                @UniqueConstraint(columnNames = "email"),
+                @UniqueConstraint(columnNames = "nickname")
         }
 )
 @Data
@@ -41,4 +42,16 @@ public class User {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    // JPA 이벤트를 사용해서 생성/수정 시간 자동 설정
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
