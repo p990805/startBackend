@@ -4,6 +4,7 @@ import com.example.demo.dto.AuthDto;
 import com.example.demo.entity.User;
 import com.example.demo.jwt.JwtUtil;
 import com.example.demo.repository.UserRepository;
+import com.example.demo.security.JwtAuthTokenFilter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,6 +36,11 @@ public class AuthService {
         // 이메일 중복 체크
         if (userRepository.existsByEmail(signupRequest.getEmail())) {
             throw new RuntimeException("이미 존재하는 이메일입니다.");
+        }
+
+        // 닉네임 중복 체크
+        if (userRepository.existsByNickname(signupRequest.getNickname())) {
+            throw new RuntimeException("이미 존재하는 닉네임입니다.");
         }
 
         // 사용자 생성
@@ -72,7 +78,7 @@ public class AuthService {
             // JWT 토큰 생성
             String jwt = jwtUtil.generateJwtToken(user.getUsername(), user.getId());
 
-            log.info("사용자 로그인: {}", user.getUsername());
+            log.info("사용자 로그인 성공: {}", user.getUsername());
 
             return AuthDto.JwtResponse.builder()
                     .accessToken(jwt)
@@ -83,7 +89,72 @@ public class AuthService {
                     .build();
 
         } catch (BadCredentialsException e) {
+            log.warn("로그인 실패 - 잘못된 인증 정보: {}", loginRequest.getUsername());
             throw new RuntimeException("잘못된 사용자명 또는 비밀번호입니다.");
+        }
+    }
+
+    public void logout(String token) {
+        try {
+            // 토큰 유효성 검증
+            if (!jwtUtil.validateJwtToken(token)) {
+                throw new RuntimeException("유효하지 않은 토큰입니다.");
+            }
+
+            String username = jwtUtil.getUsernameFromJwtToken(token);
+
+            // 토큰을 블랙리스트에 추가 (static 메소드 사용)
+            JwtAuthTokenFilter.addToBlacklist(token);
+
+            // SecurityContext 클리어
+            SecurityContextHolder.clearContext();
+
+            log.info("사용자 로그아웃 성공: {}", username);
+
+        } catch (Exception e) {
+            log.error("로그아웃 처리 중 오류 발생: {}", e.getMessage());
+            throw new RuntimeException("로그아웃 처리 중 오류가 발생했습니다.");
+        }
+    }
+
+    public AuthDto.JwtResponse refreshToken(String token) {
+        try {
+            // 토큰 유효성 검증
+            if (!jwtUtil.validateJwtToken(token)) {
+                throw new RuntimeException("유효하지 않은 토큰입니다.");
+            }
+
+            // 블랙리스트에 있는 토큰인지 확인
+            if (JwtAuthTokenFilter.isTokenBlacklisted(token)) {
+                throw new RuntimeException("로그아웃된 토큰입니다.");
+            }
+
+            String username = jwtUtil.getUsernameFromJwtToken(token);
+            Long userId = jwtUtil.getUserIdFromJwtToken(token);
+
+            // 사용자 정보 조회
+            User user = userRepository.findByUsername(username)
+                    .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+            // 기존 토큰을 블랙리스트에 추가
+            JwtAuthTokenFilter.addToBlacklist(token);
+
+            // 새로운 토큰 생성
+            String newJwt = jwtUtil.generateJwtToken(user.getUsername(), user.getId());
+
+            log.info("토큰 갱신 성공: {}", username);
+
+            return AuthDto.JwtResponse.builder()
+                    .accessToken(newJwt)
+                    .tokenType("Bearer")
+                    .userId(user.getId())
+                    .username(user.getUsername())
+                    .nickname(user.getNickname())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("토큰 갱신 중 오류 발생: {}", e.getMessage());
+            throw new RuntimeException("토큰 갱신 중 오류가 발생했습니다: " + e.getMessage());
         }
     }
 }

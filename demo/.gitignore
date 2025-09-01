@@ -40,3 +40,5 @@ application.yml
 ### 개발환경 설정 파일들
 application.yml
 application.properties
+
+.env
